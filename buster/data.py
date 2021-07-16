@@ -1,135 +1,117 @@
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
-from scipy import stats
-from typing import Iterable, Union, List, Any, Optional, Text, Dict
+from typing import Union, List, Any, Optional, Text, Dict
 
-DistType = Union[stats.rv_continuous, stats.rv_discrete]
+from skopt import space
 
-class Feature:
+# DistType = Union[stats.rv_continuous, stats.rv_discrete]
 
-  def __init__(self, dist:DistType, name:Text):
-    self._dist = dist
-    self._name = name
+class Integer(space.space.Integer):
+
+  def __init__(self, low:int, high:int, prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=np.int64) -> None:
+
+    super().__init__(low, high, prior, base, transform, name, dtype)
   
-  def transform(self, x:npt.ArrayLike) -> npt.ArrayLike:
-    """Transforms the 0,1-uniform distribution to the Feature's distribution."""
-    return self._dist.ppf(x)
-
-  @property
-  def dist(self):
-    return self._dist
-
-  @property
-  def name(self):
-    return self._name
-
-class Continuous(Feature):
-
   @classmethod
-  def from_list(cls, values:List[Any], name:Optional[Text]=None):
-    return Continuous.from_range(min(values), max(values), name)
+  def from_list(cls, values:List[int], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=np.int64):
+    return cls(min(values), max(values), prior, base, transform, name, dtype)
 
+class Real(space.space.Real):
+
+  def __init__(self, low:float, high:float, prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float) -> None:
+    super().__init__(low, high, prior, base, transform, name, dtype)
+  
   @classmethod
-  def from_range(cls, low:float, high:float, name:Optional[Text]=None):
-    dist = stats.uniform(loc=low, scale=high - low)
-    return cls(dist, name)
+  def from_list(cls, values:List[float], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float):
+    return cls(min(values), max(values), prior, base, transform, name, dtype)
+
+class Categorical(space.space.Categorical):
+
+  def __init__(self, categories:List[Any], prior:Optional[List[float]]=None, transform:Optional[Text]="label", name:Optional[Text]=None):
+    super().__init__(categories, prior, transform, name)
+
+  def transform(self, X):
+    """Transform samples form the original space to a warped space."""
+    if np.isscalar(X):
+      X = [X]
+      return super().transform([X])[0]
+    return super().transform(X)
 
 
-class Discrete(Feature):
-
+  def inverse_transform(self, Xt):
+    """Inverse transform samples from the warped space back into the
+        original space.
+    """
+    if np.isscalar(Xt):
+      return super().inverse_transform([Xt])[0]
+    return super().inverse_transform(Xt)
+  
   @classmethod
-  def from_list(cls, values:List[Any], name:Optional[Text]=None):
-    return Discrete.from_range(min(values), max(values), name)
+  def from_list(cls, values:List[Any], prior:Optional[List[float]]=None, transform:Optional[Text]="label", name:Optional[Text]=None):
+    # Removes duplicates while preserving order
+    categories = list(dict.fromkeys(values))
+    return cls(categories, prior, transform, name)
 
+class Space(space.space.Space):
   @classmethod
-  def from_range(cls, low:int, high:int, name:Optional[Text]=None):
-    num_int = high-low+1
-    dist = stats.rv_discrete(values=(np.arange(low, high+1), np.full(num_int, 1/(num_int))))
-    return cls(dist, name)
-
-
-class Categorical(Feature):
-
-  @classmethod
-  def from_list(cls, categories:List[Any], name:Optional[Text]=None):
-    num_cat = len(set(categories))
-    return Categorical.from_num(num_cat, name)
-
-  @classmethod
-  def from_num(cls, num:int, name:Optional[Text]=None):
-    dist = stats.rv_discrete(values=(np.arange(num), np.full(num, 1/num)))
-    return cls(dist, name)
-
-
-class DatasetSchema:
-  def __init__(self, features: Iterable[Feature]):
-    self._features = features
-
-  def __iter__(self):
-   yield from self._features
-
-  @property
-  def features(self):
-    return self._features
-
-  @property
-  def num_features(self):
-    return len(self._features)
-
-  @classmethod
-  def infer_feature(cls, series: pd.Series) -> Feature:
+  def infer_dimension(cls, series: pd.Series) -> space.space.Dimension:
     dtype = series.dtype
     if pd.api.types.is_float_dtype(dtype):
-      return Continuous
+      return Real
     elif pd.api.types.is_integer_dtype(dtype):
-      return Discrete
+      return Integer
     elif pd.api.types.is_bool_dtype(dtype):
-      return Discrete
+      return Integer
     else:
       return Categorical
 
   @classmethod
-  def from_df(cls, df: pd.DataFrame, cat_names:Optional[List[Text]]=None, cont_names:Optional[List[Text]]=None, disc_names:Optional[List[Text]]=None, dist_override:Optional[Dict[Text, DistType]]=None):
+  def from_df(cls, df: pd.DataFrame, cat_cols:Optional[List[Text]]=None, int_cols:Optional[List[Text]]=None, real_cols:Optional[List[Text]]=None, priors:Optional[Dict[Text, Union[Text, float]]]=None, bases:Optional[Dict[Text, int]]=None):
     """Create DatasetSchema from a Pandas DataFrame"""
-    if cat_names is None:
-      cat_names = []
-    if cont_names is None:
-      cont_names = []
-    if disc_names is None:
-      disc_names = []
-    if dist_override is None:
-      dist_override = {}
+    if cat_cols is None:
+      cat_cols = []
+    if real_cols is None:
+      real_cols = []
+    if int_cols is None:
+      int_cols = []
+    if priors is None:
+      priors = {}
+    if bases is None:
+      bases = {}
     
-    cat_set = set(cat_names)
-    cont_set = set(cont_names)
-    disc_set = set(disc_names)
+    cat_set = set(cat_cols)
+    real_set = set(real_cols)
+    int_set = set(int_cols)
 
-    features = []
+    dimensions = []
     
     for col_name in df.columns:
-
-      dtype = df[col_name].dtype
 
       feat_cls = None
 
       if col_name in cat_set:
         feat_cls = Categorical
-      elif col_name in cont_set:
-        feat_cls = Continuous
-      elif col_name in disc_set:
-        feat_cls = Discrete
+      elif col_name in real_set:
+        feat_cls = Real
+      elif col_name in int_set:
+        feat_cls = Integer
 
-      feat_cls = feat_cls or cls.infer_feature(df[col_name])
+      feat_cls = feat_cls or cls.infer_dimension(df[col_name])
 
-      if col_name in dist_override:
-        feature = feat_cls(dist_override[col_name], col_name)
-      else:
-        feature = feat_cls.from_list(df[col_name], col_name)
+      kwargs = {}
 
-      features.append(feature)
+      if col_name in priors:
+        kwargs['prior'] = priors[col_name]
 
-    return DatasetSchema(features)
+      if col_name in bases:
+        kwargs['base'] = bases[col_name]
+
+      dimension = feat_cls.from_list(df[col_name], name=col_name, **kwargs)
+
+      dimensions.append(dimension)
+
+    return Space(dimensions)
       
   
   @classmethod

@@ -1,36 +1,36 @@
 import unittest
+
 from buster import data
 import numpy as np
 import pandas as pd
 from IPython import embed
-from scipy import stats
 
 
-class TestFeature(unittest.TestCase):
+class TestDimension(unittest.TestCase):
 
-  def test_continuous_transform(self):
-    feature = data.Continuous.from_range(1, 11)
-    self.assertEqual(feature.transform(0), 1)
-    self.assertEqual(feature.transform(0.01), 1.1)
-    self.assertEqual(feature.transform(0.99), 10.9)
-    np.testing.assert_array_equal(feature.transform([0.5, 1]), np.array([6.0, 11]))
+  def test_real_transform(self):
+    dimension = data.Real(1, 10)
+    self.assertEqual(dimension.inverse_transform(0), 1)
+    self.assertEqual(dimension.inverse_transform(0.01), 1.09)
+    self.assertEqual(dimension.inverse_transform(0.99), 9.91)
+    np.testing.assert_array_equal(dimension.inverse_transform([0.5, 1]), np.array([5.5, 10]))
 
-  def test_discrete_transform(self):
-    feature = data.Discrete.from_range(1, 10)
-    self.assertEqual(feature.transform(0), 0)
-    self.assertEqual(feature.transform(0.01), 1)
-    self.assertEqual(feature.transform(0.99), 10)
-    np.testing.assert_array_equal(feature.transform([0.5, 1]), np.array([5, 10]))
+  def test_integer_transform(self):
+    dimension = data.Integer(1, 10)
+    self.assertEqual(dimension.inverse_transform(0), 1)
+    self.assertEqual(dimension.inverse_transform(0.01), 1)
+    self.assertEqual(dimension.inverse_transform(0.99), 10)
+    np.testing.assert_array_equal(dimension.inverse_transform([0.5, 1]), np.array([6, 10]))
 
   def test_categorical_transform(self):
-    feature = data.Categorical.from_list(['cat', 'dog', 'rabbit', 'rabbit'])
-    self.assertEqual(feature.transform(0), -1.0)
-    self.assertEqual(feature.transform(0.01), 0)
-    self.assertEqual(feature.transform(0.99), 2)
-    np.testing.assert_array_equal(feature.transform([0.5, 1]), np.array([1, 2]))
+    dimension = data.Categorical.from_list(['cat', 'dog', 'rabbit', 'rabbit'])
+    self.assertEqual(dimension.inverse_transform(1), 'dog')
+    self.assertEqual(dimension.inverse_transform(0.01), 'cat')
+    self.assertEqual(dimension.inverse_transform(0.99), 'dog')
+    np.testing.assert_array_equal(dimension.inverse_transform([0.5, 1]), np.array(['cat', 'dog']))
 
 
-class TestDatasetSchema(unittest.TestCase):
+class TestSpace(unittest.TestCase):
   def setUp(self) -> None:
     self._df = pd.DataFrame({ 'int': [-100, 0, 100], 
                               'float': [-100.0, 0.0, 100.0], 
@@ -39,47 +39,54 @@ class TestDatasetSchema(unittest.TestCase):
     return super().setUp()
   
   def test_from_df(self):
-    cat_names = ['cat']
-    cont_names = ['float', 'int']
-    disc_names = ['bool']
-    schema = data.DatasetSchema.from_df(self._df, cat_names=cat_names, cont_names=cont_names, disc_names=disc_names)
-    features = [feature for feature in schema]
+    cat_cols = ['cat']
+    real_cols = ['float', 'int']
+    int_cols = ['bool']
+    schema = data.Space.from_df(self._df, cat_cols=cat_cols, int_cols=int_cols, real_cols=real_cols)
+    dimensions = [dimension for dimension in schema.dimensions]
 
-    self.assertIsInstance(features[0], data.Continuous)
-    self.assertIsInstance(features[1], data.Continuous)
-    self.assertIsInstance(features[2], data.Discrete)
-    self.assertIsInstance(features[3], data.Categorical)
+    self.assertIsInstance(dimensions[0], data.Real)
+    self.assertIsInstance(dimensions[1], data.Real)
+    self.assertIsInstance(dimensions[2], data.Integer)
+    self.assertIsInstance(dimensions[3], data.Categorical)
 
-    self.assertEqual(features[0].name, 'int')
-    self.assertEqual(features[1].name, 'float')
-    self.assertEqual(features[2].name, 'bool')
-    self.assertEqual(features[3].name, 'cat')
+    self.assertEqual(dimensions[0].name, 'int')
+    self.assertEqual(dimensions[1].name, 'float')
+    self.assertEqual(dimensions[2].name, 'bool')
+    self.assertEqual(dimensions[3].name, 'cat')
 
-  def test_from_df_with_override(self):
-    dist_custom = stats.rv_discrete(values=([1, 2], [0.2, 0.8]))
-    dist_override = {'int': dist_custom}
-    schema = data.DatasetSchema.from_df(self._df, dist_override=dist_override)
-    features = [feature for feature in schema]
+  def test_from_df_with_bases(self):
+    schema = data.Space.from_df(self._df, bases={'int': 2})
+    dimensions = [dimension for dimension in schema.dimensions]
 
-    self.assertEqual(features[0].dist, dist_custom)
+    self.assertEqual(dimensions[0].base, 2)
+
+  def test_from_df_with_priors(self):
+    int_prior = 'log-uniform'
+    cat_prior = [0.1, 0.4, 0.5]
+    schema = data.Space.from_df(self._df, priors={'int': int_prior, 'cat': cat_prior})
+    dimensions = [dimension for dimension in schema.dimensions]
+
+    self.assertEqual(dimensions[0].prior, int_prior)
+    self.assertEqual(dimensions[3].prior, cat_prior)
 
   def test_from_df_with_infer(self):
-    schema = data.DatasetSchema.from_df(self._df)
-    features = [feature for feature in schema]
+    schema = data.Space.from_df(self._df)
+    dimensions = [dimension for dimension in schema]
 
-    self.assertIsInstance(features[0], data.Discrete)
-    self.assertIsInstance(features[1], data.Continuous)
-    self.assertIsInstance(features[2], data.Discrete)
-    self.assertIsInstance(features[3], data.Categorical)
+    self.assertIsInstance(dimensions[0], data.Integer)
+    self.assertIsInstance(dimensions[1], data.Real)
+    self.assertIsInstance(dimensions[2], data.Integer)
+    self.assertIsInstance(dimensions[3], data.Categorical)
 
-  def test_infer_feature(self):
-    feat_float = data.DatasetSchema.infer_feature(pd.Series([1.2]))
-    self.assertEqual(feat_float, data.Continuous)
-    feat_int = data.DatasetSchema.infer_feature(pd.Series([1]))
-    self.assertEqual(feat_int, data.Discrete)
-    feat_int = data.DatasetSchema.infer_feature(pd.Series([False]))
-    self.assertEqual(feat_int, data.Discrete)
-    feat_cat = data.DatasetSchema.infer_feature(pd.Series(['cat']))
+  def test_infer_dimension(self):
+    feat_float = data.Space.infer_dimension(pd.Series([1.2]))
+    self.assertEqual(feat_float, data.Real)
+    feat_int = data.Space.infer_dimension(pd.Series([1]))
+    self.assertEqual(feat_int, data.Integer)
+    feat_int = data.Space.infer_dimension(pd.Series([False]))
+    self.assertEqual(feat_int, data.Integer)
+    feat_cat = data.Space.infer_dimension(pd.Series(['cat']))
     self.assertEqual(feat_cat, data.Categorical)
 
 
