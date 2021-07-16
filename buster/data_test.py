@@ -29,6 +29,19 @@ class TestDimension(unittest.TestCase):
     self.assertEqual(dimension.inverse_transform(0.99), 'dog')
     np.testing.assert_array_equal(dimension.inverse_transform([0.5, 1]), np.array(['cat', 'dog']))
 
+  def test_transform_distance(self):
+    dimension = data.Real(1, 10)
+    self.assertEqual(dimension.transform_distance(1, 10), 1)
+    self.assertEqual(dimension.transform_distance(1, 5.5), 0.5)
+
+    dimension = data.Integer(1, 11)
+    self.assertEqual(dimension.transform_distance(1, 11), 1)
+    self.assertEqual(dimension.transform_distance(1, 6), 0.5)
+
+    dimension = data.Categorical.from_list(['cat', 'dog', 'rabbit', 'rabbit'])
+    self.assertEqual(dimension.transform_distance('cat', 'cat'), 0)
+    self.assertEqual(dimension.transform_distance('cat', 'dog'), 1)
+
 
 class TestSpace(unittest.TestCase):
   def setUp(self) -> None:
@@ -36,7 +49,16 @@ class TestSpace(unittest.TestCase):
                               'float': [-100.0, 0.0, 100.0], 
                               'bool': [True, False, True],
                               'cat': ['cat', 'dog', 'rabbit'] })
+    self._space = data.Space.from_df(self._df)
     return super().setUp()
+
+  def test_gowers_distance_min(self):
+    distance = self._space.gowers_distance([0, 50, 0, 'cat'], [0, 50, 0, 'cat'])
+    self.assertEqual(distance, 0)
+
+  def test_gowers_distance_max(self):
+    distance = self._space.gowers_distance([100, 100, 0, 'cat'], [-100, -100, 1, 'dog'])
+    self.assertEqual(distance, 1)
   
   def test_from_df(self):
     cat_cols = ['cat']

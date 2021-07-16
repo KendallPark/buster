@@ -1,3 +1,4 @@
+from IPython.terminal.embed import embed
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
@@ -13,6 +14,12 @@ class Integer(space.space.Integer):
 
     super().__init__(low, high, prior, base, transform, name, dtype)
   
+  def transform_distance(self, a, b):
+    if not (a in self and b in self):
+      raise RuntimeError("Can only compute distance for values within "
+                            "the space, not %s and %s." % (a, b))
+    return abs(self.transform(a) - self.transform(b))
+
   @classmethod
   def from_list(cls, values:List[int], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=np.int64):
     return cls(min(values), max(values), prior, base, transform, name, dtype)
@@ -22,6 +29,12 @@ class Real(space.space.Real):
   def __init__(self, low:float, high:float, prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float) -> None:
     super().__init__(low, high, prior, base, transform, name, dtype)
   
+  def transform_distance(self, a, b):
+    if not (a in self and b in self):
+      raise RuntimeError("Can only compute distance for values within "
+                            "the space, not %s and %s." % (a, b))
+    return abs(self.transform(a) - self.transform(b))
+
   @classmethod
   def from_list(cls, values:List[float], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float):
     return cls(min(values), max(values), prior, base, transform, name, dtype)
@@ -38,7 +51,6 @@ class Categorical(space.space.Categorical):
       return super().transform([X])[0]
     return super().transform(X)
 
-
   def inverse_transform(self, Xt):
     """Inverse transform samples from the warped space back into the
         original space.
@@ -46,6 +58,9 @@ class Categorical(space.space.Categorical):
     if np.isscalar(Xt):
       return super().inverse_transform([Xt])[0]
     return super().inverse_transform(Xt)
+
+  def transform_distance(self, a, b):
+    return self.distance(a, b)
   
   @classmethod
   def from_list(cls, values:List[Any], prior:Optional[List[float]]=None, transform:Optional[Text]="label", name:Optional[Text]=None):
@@ -54,6 +69,24 @@ class Categorical(space.space.Categorical):
     return cls(categories, prior, transform, name)
 
 class Space(space.space.Space):
+
+  def gowers_distance(self, point_a, point_b):
+    """Compute gower distance between two points in this space.
+
+    Parameters
+    ----------
+    point_a : array
+        First point.
+
+    point_b : array
+        Second point.
+    """
+    total_distance = 0.
+    for a, b, dim in zip(point_a, point_b, self.dimensions):
+      total_distance += dim.transform_distance(a, b)
+
+    return total_distance/self.n_dims
+
   @classmethod
   def infer_dimension(cls, series: pd.Series) -> space.space.Dimension:
     dtype = series.dtype
