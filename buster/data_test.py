@@ -5,6 +5,13 @@ import numpy as np
 import pandas as pd
 from IPython import embed
 
+DF_1 = pd.DataFrame({ 'int': [-100, 0, 100], 
+                      'float': [-100.0, 0.0, 100.0], 
+                      'bool': [True, False, True],
+                      'cat': ['cat', 'dog', 'rabbit'] })
+
+SPACE_1 = data.Space.from_df(DF_1)
+
 
 class TestDimension(unittest.TestCase):
 
@@ -44,27 +51,21 @@ class TestDimension(unittest.TestCase):
 
 
 class TestSpace(unittest.TestCase):
-  def setUp(self) -> None:
-    self._df = pd.DataFrame({ 'int': [-100, 0, 100], 
-                              'float': [-100.0, 0.0, 100.0], 
-                              'bool': [True, False, True],
-                              'cat': ['cat', 'dog', 'rabbit'] })
-    self._space = data.Space.from_df(self._df)
-    return super().setUp()
 
   def test_gowers_distance_min(self):
-    distance = self._space.gowers_distance([0, 50, 0, 'cat'], [0, 50, 0, 'cat'])
+    distance = SPACE_1.gowers_distance([0, 50, 0, 'cat'], [0, 50, 0, 'cat'])
     self.assertEqual(distance, 0)
 
   def test_gowers_distance_max(self):
-    distance = self._space.gowers_distance([100, 100, 0, 'cat'], [-100, -100, 1, 'dog'])
+    distance = SPACE_1.gowers_distance([100, 100, 0, 'cat'], [-100, -100, 1, 'dog'])
+    self.assertEqual(distance, 1)
     self.assertEqual(distance, 1)
   
   def test_from_df(self):
     cat_cols = ['cat']
     real_cols = ['float', 'int']
     int_cols = ['bool']
-    schema = data.Space.from_df(self._df, cat_cols=cat_cols, int_cols=int_cols, real_cols=real_cols)
+    schema = data.Space.from_df(DF_1, cat_cols=cat_cols, int_cols=int_cols, real_cols=real_cols)
     dimensions = [dimension for dimension in schema.dimensions]
 
     self.assertIsInstance(dimensions[0], data.Real)
@@ -78,7 +79,7 @@ class TestSpace(unittest.TestCase):
     self.assertEqual(dimensions[3].name, 'cat')
 
   def test_from_df_with_bases(self):
-    schema = data.Space.from_df(self._df, bases={'int': 2})
+    schema = data.Space.from_df(DF_1, bases={'int': 2})
     dimensions = [dimension for dimension in schema.dimensions]
 
     self.assertEqual(dimensions[0].base, 2)
@@ -86,14 +87,14 @@ class TestSpace(unittest.TestCase):
   def test_from_df_with_priors(self):
     int_prior = 'log-uniform'
     cat_prior = [0.1, 0.4, 0.5]
-    schema = data.Space.from_df(self._df, priors={'int': int_prior, 'cat': cat_prior})
+    schema = data.Space.from_df(DF_1, priors={'int': int_prior, 'cat': cat_prior})
     dimensions = [dimension for dimension in schema.dimensions]
 
     self.assertEqual(dimensions[0].prior, int_prior)
     self.assertEqual(dimensions[3].prior, cat_prior)
 
   def test_from_df_with_infer(self):
-    schema = data.Space.from_df(self._df)
+    schema = data.Space.from_df(DF_1)
     dimensions = [dimension for dimension in schema]
 
     self.assertIsInstance(dimensions[0], data.Integer)
