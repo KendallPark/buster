@@ -60,7 +60,15 @@ class TestSpace(unittest.TestCase):
     distance = SPACE_1.gowers_distance([100, 100, 0, 'cat'], [-100, -100, 1, 'dog'])
     self.assertEqual(distance, 1)
     self.assertEqual(distance, 1)
-  
+
+  def test_gowers_matrix(self):
+    point_a = [0, 0, 0, 'cat']
+    point_b = [100, 0, 0, 'cat']
+    point_c = [-100, 50, 1, 'dog']
+    result = SPACE_1.gowers_matrix(point_a, [point_b, point_c])
+    expected = np.array([[0.5 , 0.  , 0.  , 0.  ], [0.5 , 0.25, 1.  , 1.  ]])
+    np.testing.assert_array_equal(result, expected)
+
   def test_from_df(self):
     cat_cols = ['cat']
     real_cols = ['float', 'int']

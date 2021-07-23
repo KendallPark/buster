@@ -85,6 +85,12 @@ class Space(sp.space.Space):
 
     return total_distance/self.n_dims
 
+
+  def gowers_matrix(self, point_a, points:npt.ArrayLike):
+    # probably want to vectorize
+    matrix = [[self.dimensions[col].transform_distance(point_a[col], points[row][col]) for col in range(self.n_dims)] for row in range(len(points))]
+    return np.array(matrix) 
+
   @classmethod
   def infer_dimension(cls, series: pd.Series) -> sp.space.Dimension:
     dtype = series.dtype
