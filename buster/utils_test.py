@@ -84,5 +84,24 @@ class TestIntersiteProj(unittest.TestCase):
     self.assertEqual(result, expected_2)
 
 
+class TestVoronoiRankings(unittest.TestCase):
+
+  def test_label_factor(self):
+    labels = [True, False, True, True]
+    result = utils.label_factor(labels)
+    expected = [0.25, 0.75, 0.25, 0.25]
+    np.testing.assert_array_equal(result, expected)
+
+    labels_2 = [1, 2, 3, 1]
+    result_2 = utils.label_factor(labels_2)
+    expected_2 = [0.5 , 0.75, 0.75, 0.5 ]
+    np.testing.assert_array_equal(result_2, expected_2)
+
+    labels_3 = ['cat', 'dog', 'rabbit', 'rabbit']
+    result_3 = utils.label_factor(labels_3)
+    expected_3 = [0.75, 0.75, 0.5 , 0.5 ]
+    np.testing.assert_array_equal(result_3, expected_3)
+
+
 if __name__ == '__main__':
   unittest.main()

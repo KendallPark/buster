@@ -52,3 +52,7 @@ def intersite_proj(p:npt.ArrayLike, samples:npt.ArrayLike, space:data.Space, alp
   coeff_2 = (num_samples+1)/2
   return coeff_1 * l2_norm_min + coeff_2 * min_norm_min
 
+def label_factor(y:npt.ArrayLike):
+  counts = collections.Counter(y)
+  return ((np.array([counts[label] for label in y]) * -1) + len(y))/len(y)
+
