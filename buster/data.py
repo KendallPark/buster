@@ -4,11 +4,9 @@ import numpy as np
 import numpy.typing as npt
 from typing import Union, List, Any, Optional, Text, Dict
 
-from skopt import space
+from skopt import space as sp
 
-# DistType = Union[stats.rv_continuous, stats.rv_discrete]
-
-class Integer(space.space.Integer):
+class Integer(sp.space.Integer):
 
   def __init__(self, low:int, high:int, prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=np.int64) -> None:
 
@@ -24,7 +22,7 @@ class Integer(space.space.Integer):
   def from_list(cls, values:List[int], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=np.int64):
     return cls(min(values), max(values), prior, base, transform, name, dtype)
 
-class Real(space.space.Real):
+class Real(sp.space.Real):
 
   def __init__(self, low:float, high:float, prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float) -> None:
     super().__init__(low, high, prior, base, transform, name, dtype)
@@ -39,7 +37,7 @@ class Real(space.space.Real):
   def from_list(cls, values:List[float], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float):
     return cls(min(values), max(values), prior, base, transform, name, dtype)
 
-class Categorical(space.space.Categorical):
+class Categorical(sp.space.Categorical):
 
   def __init__(self, categories:List[Any], prior:Optional[List[float]]=None, transform:Optional[Text]="label", name:Optional[Text]=None):
     super().__init__(categories, prior, transform, name)
@@ -68,7 +66,7 @@ class Categorical(space.space.Categorical):
     categories = list(dict.fromkeys(values))
     return cls(categories, prior, transform, name)
 
-class Space(space.space.Space):
+class Space(sp.space.Space):
 
   def gowers_distance(self, point_a, point_b):
     """Compute gower distance between two points in this space.
@@ -88,7 +86,7 @@ class Space(space.space.Space):
     return total_distance/self.n_dims
 
   @classmethod
-  def infer_dimension(cls, series: pd.Series) -> space.space.Dimension:
+  def infer_dimension(cls, series: pd.Series) -> sp.space.Dimension:
     dtype = series.dtype
     if pd.api.types.is_float_dtype(dtype):
       return Real
