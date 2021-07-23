@@ -195,6 +195,8 @@ class GowerBallTree(neighbors.BallTree):
 
   # TODO: turn this into a wrapper
   def query(self, X, k=1, return_distance=True, dualtree=False, breadth_first=False, sort_results=True):
-    Xt = self._space.transform(np.array(X))
+    if isinstance(X, pd.DataFrame):
+      X = X.to_numpy()
+    Xt = self._space.transform(X)
     return super().query(Xt, k, return_distance, dualtree, breadth_first, sort_results)
   
