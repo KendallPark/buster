@@ -73,7 +73,6 @@ def neighbor_score(X:npt.ArrayLike, y:npt.ArrayLike, tree: data.GowerBallTree, k
     n_dim = X.shape[1]
     k = min(2*n_dim+1, len(X))
   _, nn_indices = tree.query(X, k=k)
-  # embed()
   neighbor_scores = np.zeros(len(X))
   for i in range(len(nn_indices)):
     counts = collections.Counter([y[j] for j in nn_indices[i]])
