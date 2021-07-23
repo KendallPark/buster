@@ -170,7 +170,9 @@ class Space(sp.space.Space):
       if col_name in bases:
         kwargs['base'] = bases[col_name]
 
-      dimension = feat_cls.from_list(df[col_name], name=col_name, **kwargs)
+      dim_name = str(col_name) if col_name is not None else None
+
+      dimension = feat_cls.from_list(df[col_name], name=dim_name, **kwargs)
 
       dimensions.append(dimension)
 
