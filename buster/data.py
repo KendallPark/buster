@@ -5,6 +5,7 @@ import numpy.typing as npt
 from typing import Union, List, Any, Optional, Text, Dict
 
 from skopt import space as sp
+from sklearn import neighbors
 
 class Integer(sp.space.Integer):
 
@@ -184,3 +185,16 @@ class Space(sp.space.Space):
     """Create DatasetSchema from a csv."""
     return cls.from_df(pd.read_csv(filepath_or_buffer, skipinitialspace=skipinitialspace), **kwargs)
 
+
+class GowerBallTree(neighbors.BallTree):
+
+  def __init__(self, X:npt.ArrayLike, space:Space, leaf_size:int=40, **kwargs) -> None:
+    self._space = space
+    Xt = self._space.transform(np.array(X))
+    super().__init__(Xt, leaf_size, metric='pyfunc', func=space.inverse_transform_gowers_distance)
+
+  # TODO: turn this into a wrapper
+  def query(self, X, k=1, return_distance=True, dualtree=False, breadth_first=False, sort_results=True):
+    Xt = self._space.transform(np.array(X))
+    return super().query(Xt, k, return_distance, dualtree, breadth_first, sort_results)
+  

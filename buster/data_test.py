@@ -132,6 +132,10 @@ class TestSpace(unittest.TestCase):
     self.assertEqual(feat_cat, data.Categorical)
 
 
+class TestGowerBallTree(unittest.TestCase):
 
-
-
+  def test_gower_ball_tree(self):
+    tree = data.GowerBallTree(DF_1, SPACE_1)
+    dist, ind = tree.query(DF_1[:1], k=2)
+    np.testing.assert_array_equal(dist, [[0., 0.75]])
+    np.testing.assert_array_equal(ind, [[0, 1]])
