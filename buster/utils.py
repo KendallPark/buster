@@ -56,6 +56,7 @@ def label_factor(y:npt.ArrayLike):
   counts = collections.Counter(y)
   return ((np.array([counts[label] for label in y]) * -1) + len(y))/len(y)
 
+
 def voronoi_volume_fractions(tree:data.GowerBallTree, candidates:npt.ArrayLike):
   data, _, _, _ = tree.get_arrays()
   volumes = np.zeros(len(data))
@@ -65,4 +66,17 @@ def voronoi_volume_fractions(tree:data.GowerBallTree, candidates:npt.ArrayLike):
     volumes[i] += 1
 
   return volumes/len(nn_candidates)
+
+
+def neighbor_score(X:npt.ArrayLike, y:npt.ArrayLike, tree: data.GowerBallTree, k:Optional[int]=None):
+  if k is None:
+    n_dim = X.shape[1]
+    k = min(2*n_dim+1, len(X))
+  _, nn_indices = tree.query(X, k=k)
+  # embed()
+  neighbor_scores = np.zeros(len(X))
+  for i in range(len(nn_indices)):
+    counts = collections.Counter([y[j] for j in nn_indices[i]])
+    neighbor_scores[i] = k - counts[y[i]]
+  return neighbor_scores
 
