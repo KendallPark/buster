@@ -80,3 +80,14 @@ def neighbor_score(X:npt.ArrayLike, y:npt.ArrayLike, tree: data.GowerBallTree, k
     neighbor_scores[i] = k - counts[y[i]]
   return neighbor_scores
 
+
+def voronoi_rankings(X, y, space, candidates:Optional[npt.ArrayLike]=None, criterion:Optional[Text]=None, random_state:Optional[int]=None):
+  if candidates is None:
+    sample_size = 500 * X.shape[0] * X.shape[1]
+    lhs_scaled(space, sample_size, criterion, random_state)
+  
+  tree = data.GowerBallTree(X, space)
+  vol = voronoi_volume_fractions(tree, candidates)
+  ns = neighbor_score(X, y, tree)
+  lf = label_factor(y)
+  return vol * ns * lf

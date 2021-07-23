@@ -117,5 +117,16 @@ class TestVoronoiRankings(unittest.TestCase):
     np.testing.assert_array_equal(scores, [1, 1, 0])
 
 
+  def test_voronoi_ranks(self):
+    tree = data.GowerBallTree(DF_1, SPACE_1)
+    candidates = utils.lhs_scaled(SPACE_1, 100, random_state=0)
+    y = [True, False, True]
+
+    rankings = utils.voronoi_rankings(DF_1, y, SPACE_1, candidates)
+    top_rank = np.argmax(rankings)
+    self.assertEqual(rankings.shape, (len(DF_1),))
+    self.assertEqual(top_rank, 1)
+
+
 if __name__ == '__main__':
   unittest.main()
