@@ -103,5 +103,11 @@ class TestVoronoiRankings(unittest.TestCase):
     np.testing.assert_array_equal(result_3, expected_3)
 
 
+  def test_voronoi_volume_fractions(self):
+    tree = data.GowerBallTree(DF_1, SPACE_1)
+    candidates = utils.lhs_scaled(SPACE_1, 100, random_state=0)
+    volumes = utils.voronoi_volume_fractions(tree, candidates)
+    np.testing.assert_array_equal(volumes, [0.15, 0.68, 0.17])
+
 if __name__ == '__main__':
   unittest.main()

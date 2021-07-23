@@ -56,3 +56,13 @@ def label_factor(y:npt.ArrayLike):
   counts = collections.Counter(y)
   return ((np.array([counts[label] for label in y]) * -1) + len(y))/len(y)
 
+def voronoi_volume_fractions(tree:data.GowerBallTree, candidates:npt.ArrayLike):
+  data, _, _, _ = tree.get_arrays()
+  volumes = np.zeros(len(data))
+  _, nn_candidates = tree.query(candidates, k=1)
+  nn_candidates = nn_candidates.flatten()
+  for i in nn_candidates:
+    volumes[i] += 1
+
+  return volumes/len(nn_candidates)
+
