@@ -18,6 +18,14 @@ class Integer(sp.space.Integer):
                             "the space, not %s and %s." % (a, b))
     return abs(self.transform(a) - self.transform(b))
 
+  def inverse_transform_distance(self, a, b):
+    inv_a = self.inverse_transform(a)
+    inv_b = self.inverse_transform(b)
+    if not (inv_a in self and inv_b in self):
+      raise RuntimeError("Can only compute distance for values within "
+                            "the space, not %s and %s." % (inv_a, inv_b))
+    return abs(a - b)
+
   @classmethod
   def from_list(cls, values:List[int], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=np.int64):
     return cls(min(values), max(values), prior, base, transform, name, dtype)
@@ -32,6 +40,14 @@ class Real(sp.space.Real):
       raise RuntimeError("Can only compute distance for values within "
                             "the space, not %s and %s." % (a, b))
     return abs(self.transform(a) - self.transform(b))
+
+  def inverse_transform_distance(self, a, b):
+    inv_a = self.inverse_transform(a)
+    inv_b = self.inverse_transform(b)
+    if not (inv_a in self and inv_b in self):
+      raise RuntimeError("Can only compute distance for values within "
+                            "the space, not %s and %s." % (inv_a, inv_b))
+    return abs(a - b)
 
   @classmethod
   def from_list(cls, values:List[float], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float):
@@ -59,6 +75,9 @@ class Categorical(sp.space.Categorical):
 
   def transform_distance(self, a, b):
     return self.distance(a, b)
+
+  def inverse_transform_distance(self, a, b):
+    return self.distance(self.inverse_transform(a), self.inverse_transform(b))
   
   @classmethod
   def from_list(cls, values:List[Any], prior:Optional[List[float]]=None, transform:Optional[Text]="label", name:Optional[Text]=None):
@@ -90,6 +109,13 @@ class Space(sp.space.Space):
     # probably want to vectorize
     matrix = [[self.dimensions[col].transform_distance(point_a[col], points[row][col]) for col in range(self.n_dims)] for row in range(len(points))]
     return np.array(matrix) 
+
+
+  def inverse_transform_gowers_distance(self, point_a, point_b):
+    total_distance = 0.
+    for a, b, dim in zip(point_a, point_b, self.dimensions):
+      total_distance += dim.inverse_transform_distance(a, b)
+    return total_distance/self.n_dims
 
   @classmethod
   def infer_dimension(cls, series: pd.Series) -> sp.space.Dimension:

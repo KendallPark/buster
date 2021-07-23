@@ -59,6 +59,17 @@ class TestSpace(unittest.TestCase):
   def test_gowers_distance_max(self):
     distance = SPACE_1.gowers_distance([100, 100, 0, 'cat'], [-100, -100, 1, 'dog'])
     self.assertEqual(distance, 1)
+
+  def test_inverse_transform_gowers_distance_min(self):
+    point_a = SPACE_1.transform([[0, 50, 0, 'cat']])[0]
+    point_b = SPACE_1.transform([[0, 50, 0, 'cat']])[0]
+    distance = SPACE_1.inverse_transform_gowers_distance(point_a, point_b)
+    self.assertEqual(distance, 0)
+
+  def test_inverse_transform_gowers_distance_max(self):
+    point_a = SPACE_1.transform([[100, 100, 0, 'cat']])[0]
+    point_b = SPACE_1.transform([[-100, -100, 1, 'dog']])[0]
+    distance = SPACE_1.inverse_transform_gowers_distance(point_a, point_b)
     self.assertEqual(distance, 1)
 
   def test_gowers_matrix(self):
