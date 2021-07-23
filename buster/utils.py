@@ -18,3 +18,37 @@ def lhs_scaled(space:data.Space, num_samples:int, criterion:Optional[Text]=None,
   return design
   
 
+def intersite_proj_th(p:npt.ArrayLike, samples:npt.ArrayLike, space:data.Space, alpha:float=0.5) -> float:
+  """Perform MIPT sampling.
+
+  Crombecq, K., Laermans, E. & Dhaene, T. Efficient space-filling and 
+  non-collapsing sequential design strategies for simulation-based modeling. 
+  Eur J Oper Res 214, 683–696 (2011).
+  """
+  d_min = (2 * alpha)/ samples.shape[0]
+  gowers_matrix = space.gowers_matrix(p, np.array(samples))
+  result = np.linalg.norm(gowers_matrix, ord=np.NINF, axis=1).min()
+  # This could present an issue with categorical variables
+  # embed()
+  if result < d_min:
+    return 0
+  return np.linalg.norm(gowers_matrix, ord=2, axis=1).min()
+
+
+def intersite_proj(p:npt.ArrayLike, samples:npt.ArrayLike, space:data.Space, alpha:float=0.5) -> float:
+  """Perform MIP sampling. (No threshold.)
+
+  Crombecq, K., Laermans, E. & Dhaene, T. Efficient space-filling and 
+  non-collapsing sequential design strategies for simulation-based modeling. 
+  Eur J Oper Res 214, 683–696 (2011).
+  """
+  num_dim = space.n_dims
+  num_samples = samples.shape[0]
+  gowers_matrix = space.gowers_matrix(p, np.array(samples))
+  l2_norm_min = np.linalg.norm(gowers_matrix, ord=2, axis=1).min()
+  min_norm_min = np.linalg.norm(gowers_matrix, ord=np.NINF, axis=1).min()
+
+  coeff_1 = ((num_samples+1)**(1/num_dim) - 1)/2
+  coeff_2 = (num_samples+1)/2
+  return coeff_1 * l2_norm_min + coeff_2 * min_norm_min
+
