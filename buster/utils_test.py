@@ -4,19 +4,19 @@ import numpy as np
 import pandas as pd
 from IPython import embed
 
-SAMPLES_2 = np.array([[1, 2, 3],
-                      [7, 8, 9],
-                      [7, 8, 9]])
+SAMPLES_2 = np.array([[1, 2, 3], [7, 8, 9], [7, 8, 9]])
 
 SPACE_2 = data.Space.from_df(pd.DataFrame(SAMPLES_2))
 
-
-DF_1 = pd.DataFrame({ 'int': [-100, 0, 100], 
-                      'float': [-100.0, 0.0, 100.0], 
-                      'bool': [True, False, True],
-                      'cat': ['cat', 'dog', 'rabbit'] })
+DF_1 = pd.DataFrame({
+    'int': [-100, 0, 100],
+    'float': [-100.0, 0.0, 100.0],
+    'bool': [True, False, True],
+    'cat': ['cat', 'dog', 'rabbit']
+})
 
 SPACE_1 = data.Space.from_df(DF_1)
+
 
 class TestLHS(unittest.TestCase):
 
@@ -27,7 +27,7 @@ class TestLHS(unittest.TestCase):
                 [-63, 9.72627420444374, 0, 'dog']]
     self.assertEqual(scaled, expected)
 
-    
+
 class TestIntersiteProjTH(unittest.TestCase):
 
   def test_less_than_dmin_integer(self):
@@ -36,7 +36,7 @@ class TestIntersiteProjTH(unittest.TestCase):
 
   def test_greater_than_dmin_integer(self):
     result = utils.intersite_proj_th(np.array([3, 4, 5]), SAMPLES_2, SPACE_2)
-    self.assertEqual(result, ((1/3)**2 + (1/3)**2 + (1/3)**2)**0.5)
+    self.assertEqual(result, ((1 / 3)**2 + (1 / 3)**2 + (1 / 3)**2)**0.5)
 
   def test_less_than_dmin_mixed(self):
     result = utils.intersite_proj_th([0, 0, True, 'cat'], DF_1, SPACE_1)
@@ -55,29 +55,33 @@ class TestIntersiteProj(unittest.TestCase):
     space = data.Space(dimensions)
     result = utils.intersite_proj(np.array([0, 0, 0]), samples, space)
     self.assertEqual(result, 0)
-    
+
     num_samples = 1
     num_dim = 3
-    coeff_1 = ((num_samples+1)**(1/num_dim) - 1)/2
-    coeff_2 = (num_samples+1)/2
-    l2_norm_min = (0.1**2 + 0.1**2 + 0.1**2)**(1/2)
+    coeff_1 = ((num_samples + 1)**(1 / num_dim) - 1) / 2
+    coeff_2 = (num_samples + 1) / 2
+    l2_norm_min = (0.1**2 + 0.1**2 + 0.1**2)**(1 / 2)
     min_norm_min = 0.1
     expected_2 = coeff_1 * l2_norm_min + coeff_2 * min_norm_min
     result_2 = utils.intersite_proj(np.array([1, 1, 1]), samples, space)
     self.assertEqual(result_2, expected_2)
 
   def test_mixed_features(self):
-    dimensions = [data.Integer(0, 10), data.Real(0, 10), data.Categorical(['cat', 'dog', 'rabbit'])]
+    dimensions = [
+        data.Integer(0, 10),
+        data.Real(0, 10),
+        data.Categorical(['cat', 'dog', 'rabbit'])
+    ]
     space = data.Space(dimensions)
     samples = pd.DataFrame([[0, 0.0, 'cat']])
     result = utils.intersite_proj([0, 0.0, 'cat'], samples, space)
     self.assertEqual(result, 0)
-    
+
     num_samples = 1
     num_dim = 3
-    coeff_1 = ((num_samples+1)**(1/num_dim) - 1)/2
-    coeff_2 = (num_samples+1)/2
-    l2_norm_min = (0.1**2 + 0.1**2 + 1**2)**(1/2)
+    coeff_1 = ((num_samples + 1)**(1 / num_dim) - 1) / 2
+    coeff_2 = (num_samples + 1) / 2
+    l2_norm_min = (0.1**2 + 0.1**2 + 1**2)**(1 / 2)
     min_norm_min = 0.1
     expected_2 = coeff_1 * l2_norm_min + coeff_2 * min_norm_min
     result = utils.intersite_proj([1, 1.0, 'dog'], samples, space)
@@ -94,14 +98,13 @@ class TestVoronoiRankings(unittest.TestCase):
 
     labels_2 = [1, 2, 3, 1]
     result_2 = utils.label_factor(labels_2)
-    expected_2 = [0.5 , 0.75, 0.75, 0.5 ]
+    expected_2 = [0.5, 0.75, 0.75, 0.5]
     np.testing.assert_array_equal(result_2, expected_2)
 
     labels_3 = ['cat', 'dog', 'rabbit', 'rabbit']
     result_3 = utils.label_factor(labels_3)
-    expected_3 = [0.75, 0.75, 0.5 , 0.5 ]
+    expected_3 = [0.75, 0.75, 0.5, 0.5]
     np.testing.assert_array_equal(result_3, expected_3)
-
 
   def test_voronoi_volume_fractions(self):
     tree = data.GowerBallTree(DF_1, SPACE_1)
@@ -109,13 +112,11 @@ class TestVoronoiRankings(unittest.TestCase):
     volumes = utils.voronoi_volume_fractions(tree, candidates)
     np.testing.assert_array_equal(volumes, [0.15, 0.68, 0.17])
 
-
   def test_neighbor_score(self):
     tree = data.GowerBallTree(DF_1, SPACE_1)
     y = [True, False, True]
     scores = utils.neighbor_score(DF_1, y, tree, 2)
     np.testing.assert_array_equal(scores, [1, 1, 0])
-
 
   def test_voronoi_ranks(self):
     tree = data.GowerBallTree(DF_1, SPACE_1)

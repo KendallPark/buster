@@ -1,22 +1,30 @@
-from IPython.terminal.embed import embed
+from typing import Union, List, Any, Optional, Text, Dict
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
-from typing import Union, List, Any, Optional, Text, Dict
+from IPython.terminal.embed import embed
 
 from skopt import space as sp
 from sklearn import neighbors
 
+
 class Integer(sp.space.Integer):
 
-  def __init__(self, low:int, high:int, prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=np.int64) -> None:
+  def __init__(self,
+               low: int,
+               high: int,
+               prior: Optional[Text] = "uniform",
+               base: int = 10,
+               transform: Optional[Text] = "normalize",
+               name: Optional[Text] = None,
+               dtype: npt.DTypeLike = np.int64) -> None:
 
     super().__init__(low, high, prior, base, transform, name, dtype)
-  
+
   def transform_distance(self, a, b):
     if not (a in self and b in self):
       raise RuntimeError("Can only compute distance for values within "
-                            "the space, not %s and %s." % (a, b))
+                         "the space, not %s and %s." % (a, b))
     return abs(self.transform(a) - self.transform(b))
 
   def inverse_transform_distance(self, a, b):
@@ -24,22 +32,36 @@ class Integer(sp.space.Integer):
     inv_b = self.inverse_transform(b)
     if not (inv_a in self and inv_b in self):
       raise RuntimeError("Can only compute distance for values within "
-                            "the space, not %s and %s." % (inv_a, inv_b))
+                         "the space, not %s and %s." % (inv_a, inv_b))
     return abs(a - b)
 
   @classmethod
-  def from_list(cls, values:List[int], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=np.int64):
+  def from_list(cls,
+                values: List[int],
+                prior: Optional[Text] = "uniform",
+                base: int = 10,
+                transform: Optional[Text] = "normalize",
+                name: Optional[Text] = None,
+                dtype: npt.DTypeLike = np.int64):
     return cls(min(values), max(values), prior, base, transform, name, dtype)
+
 
 class Real(sp.space.Real):
 
-  def __init__(self, low:float, high:float, prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float) -> None:
+  def __init__(self,
+               low: float,
+               high: float,
+               prior: Optional[Text] = "uniform",
+               base: int = 10,
+               transform: Optional[Text] = "normalize",
+               name: Optional[Text] = None,
+               dtype: npt.DTypeLike = float) -> None:
     super().__init__(low, high, prior, base, transform, name, dtype)
-  
+
   def transform_distance(self, a, b):
     if not (a in self and b in self):
       raise RuntimeError("Can only compute distance for values within "
-                            "the space, not %s and %s." % (a, b))
+                         "the space, not %s and %s." % (a, b))
     return abs(self.transform(a) - self.transform(b))
 
   def inverse_transform_distance(self, a, b):
@@ -47,16 +69,27 @@ class Real(sp.space.Real):
     inv_b = self.inverse_transform(b)
     if not (inv_a in self and inv_b in self):
       raise RuntimeError("Can only compute distance for values within "
-                            "the space, not %s and %s." % (inv_a, inv_b))
+                         "the space, not %s and %s." % (inv_a, inv_b))
     return abs(a - b)
 
   @classmethod
-  def from_list(cls, values:List[float], prior:Optional[Text]="uniform", base:int=10, transform:Optional[Text]="normalize", name:Optional[Text]=None, dtype:npt.DTypeLike=float):
+  def from_list(cls,
+                values: List[float],
+                prior: Optional[Text] = "uniform",
+                base: int = 10,
+                transform: Optional[Text] = "normalize",
+                name: Optional[Text] = None,
+                dtype: npt.DTypeLike = float):
     return cls(min(values), max(values), prior, base, transform, name, dtype)
+
 
 class Categorical(sp.space.Categorical):
 
-  def __init__(self, categories:List[Any], prior:Optional[List[float]]=None, transform:Optional[Text]="label", name:Optional[Text]=None):
+  def __init__(self,
+               categories: List[Any],
+               prior: Optional[List[float]] = None,
+               transform: Optional[Text] = "label",
+               name: Optional[Text] = None):
     super().__init__(categories, prior, transform, name)
 
   def transform(self, X):
@@ -79,32 +112,37 @@ class Categorical(sp.space.Categorical):
 
   def inverse_transform_distance(self, a, b):
     return self.distance(self.inverse_transform(a), self.inverse_transform(b))
-  
+
   @classmethod
-  def from_list(cls, values:List[Any], prior:Optional[List[float]]=None, transform:Optional[Text]="label", name:Optional[Text]=None):
+  def from_list(cls,
+                values: List[Any],
+                prior: Optional[List[float]] = None,
+                transform: Optional[Text] = "label",
+                name: Optional[Text] = None):
     # Removes duplicates while preserving order
     categories = list(dict.fromkeys(values))
     return cls(categories, prior, transform, name)
+
 
 class Space(sp.space.Space):
 
   def _categorical_columns(self):
     return [isinstance(dim, sp.space.Categorical) for dim in self.dimensions]
 
-
-  def _numerical_columns(self, rows:Optional[int]=None):
-    return [isinstance(dim, sp.space.Real) or isinstance(dim, sp.space.Integer) for dim in self.dimensions]
-
+  def _numerical_columns(self, rows: Optional[int] = None):
+    return [
+        isinstance(dim, sp.space.Real) or isinstance(dim, sp.space.Integer)
+        for dim in self.dimensions
+    ]
 
   def transform(self, X):
-    if isinstance(X,  pd.DataFrame):
+    if isinstance(X, pd.DataFrame):
       X = X.to_numpy()
     elif len(np.shape(X)) == 1:
       X = [X]
     return super().transform(X)
 
-
-  def gowers_distance(self, X:npt.ArrayLike, Y:npt.ArrayLike, ord=None):
+  def gowers_distance(self, X: npt.ArrayLike, Y: npt.ArrayLike, ord=None):
     """Compute gower distance between two points in this space.
 
     Parameters
@@ -117,12 +155,11 @@ class Space(sp.space.Space):
     """
     difference_matrix = self.gowers_difference(X, Y)
 
-    distance = difference_matrix.sum(axis=-1)/self.n_dims
+    distance = difference_matrix.sum(axis=-1) / self.n_dims
 
     return np.squeeze(distance)
 
-
-  def gowers_difference(self, X:npt.ArrayLike, Y:npt.ArrayLike):
+  def gowers_difference(self, X: npt.ArrayLike, Y: npt.ArrayLike):
     X = self.transform(X)
     Y = self.transform(Y)
 
@@ -134,12 +171,11 @@ class Space(sp.space.Space):
 
     return np.squeeze(diff)
 
-
   def inverse_transform_gowers_distance(self, point_a, point_b):
     total_distance = 0.
     for a, b, dim in zip(point_a, point_b, self.dimensions):
       total_distance += dim.inverse_transform_distance(a, b)
-    return total_distance/self.n_dims
+    return total_distance / self.n_dims
 
   @classmethod
   def infer_dimension(cls, series: pd.Series) -> sp.space.Dimension:
@@ -154,7 +190,13 @@ class Space(sp.space.Space):
       return Categorical
 
   @classmethod
-  def from_df(cls, df: pd.DataFrame, cat_cols:Optional[List[Text]]=None, int_cols:Optional[List[Text]]=None, real_cols:Optional[List[Text]]=None, priors:Optional[Dict[Text, Union[Text, float]]]=None, bases:Optional[Dict[Text, int]]=None):
+  def from_df(cls,
+              df: pd.DataFrame,
+              cat_cols: Optional[List[Text]] = None,
+              int_cols: Optional[List[Text]] = None,
+              real_cols: Optional[List[Text]] = None,
+              priors: Optional[Dict[Text, Union[Text, float]]] = None,
+              bases: Optional[Dict[Text, int]] = None):
     """Create DatasetSchema from a Pandas DataFrame"""
     if cat_cols is None:
       cat_cols = []
@@ -166,13 +208,13 @@ class Space(sp.space.Space):
       priors = {}
     if bases is None:
       bases = {}
-    
+
     cat_set = set(cat_cols)
     real_set = set(real_cols)
     int_set = set(int_cols)
 
     dimensions = []
-    
+
     for col_name in df.columns:
 
       feat_cls = None
@@ -201,25 +243,42 @@ class Space(sp.space.Space):
       dimensions.append(dimension)
 
     return Space(dimensions)
-      
-  
+
   @classmethod
-  def from_csv(cls, filepath_or_buffer, skipinitialspace:bool=True, **kwargs):
+  def from_csv(cls,
+               filepath_or_buffer,
+               skipinitialspace: bool = True,
+               **kwargs):
     """Create DatasetSchema from a csv."""
-    return cls.from_df(pd.read_csv(filepath_or_buffer, skipinitialspace=skipinitialspace), **kwargs)
+    return cls.from_df(
+        pd.read_csv(filepath_or_buffer, skipinitialspace=skipinitialspace),
+        **kwargs)
 
 
 class GowerBallTree(neighbors.BallTree):
 
-  def __init__(self, X:npt.ArrayLike, space:Space, leaf_size:int=40, **kwargs) -> None:
+  def __init__(self,
+               X: npt.ArrayLike,
+               space: Space,
+               leaf_size: int = 40,
+               **kwargs) -> None:
     self._space = space
     Xt = self._space.transform(np.array(X))
-    super().__init__(Xt, leaf_size, metric='pyfunc', func=space.inverse_transform_gowers_distance)
+    super().__init__(Xt,
+                     leaf_size,
+                     metric='pyfunc',
+                     func=space.inverse_transform_gowers_distance)
 
   # TODO: turn this into a wrapper
-  def query(self, X, k=1, return_distance=True, dualtree=False, breadth_first=False, sort_results=True):
+  def query(self,
+            X,
+            k=1,
+            return_distance=True,
+            dualtree=False,
+            breadth_first=False,
+            sort_results=True):
     if isinstance(X, pd.DataFrame):
       X = X.to_numpy()
     Xt = self._space.transform(X)
-    return super().query(Xt, k, return_distance, dualtree, breadth_first, sort_results)
-  
+    return super().query(Xt, k, return_distance, dualtree, breadth_first,
+                         sort_results)
