@@ -2,10 +2,47 @@ from IPython.terminal.embed import embed
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
-from typing import Union, List, Any, Optional, Text, Dict
+from typing import Union, List, Any, Optional, Text, Dict, Callable, get_type_hints
 
 from skopt import space as sp
 from sklearn import neighbors
+import functools
+
+def _sanitize_arraylike(array: npt.ArrayLike):
+  if isinstance(array, pd.DataFrame):
+    return array.to_numpy()
+  if not isinstance(array, np.ndarray):
+    return np.array(array)
+  return array
+
+
+def sanitize_arraylike(func:Callable[..., Any]):
+
+  @functools.wraps(func)
+  def wrapper(self, *args, **kwargs):
+    arguments = []
+    for index, (annotation, annotation_type) in enumerate(func.__annotations__.items()):
+      if annotation_type != npt.ArrayLike:
+        continue
+      arguments.append((index, annotation))
+
+    args = list(args)
+    
+    for index, key in arguments:
+      if index < len(args):
+        args[index] = _sanitize_arraylike(args[index])
+      elif key in kwargs:
+        kwargs[key] = _sanitize_arraylike(kwargs[key])
+
+    result = func(self,  *args, **kwargs)
+    if np.shape(result) == (1,):
+      return result[0]
+    return result
+  return wrapper
+
+# def _sanitize_arraylike(array: npt.ArrayLike):
+
+
 
 class Integer(sp.space.Integer):
 
@@ -88,28 +125,76 @@ class Categorical(sp.space.Categorical):
 
 class Space(sp.space.Space):
 
-  def gowers_distance(self, point_a, point_b):
+  def _categorical_columns(self):
+    return [isinstance(dim, sp.space.Categorical) for dim in self.dimensions]
+
+  def _categorical_mask(self, rows:Optional[int]=None):
+    return [not isinstance(dim, sp.space.Categorical) for dim in self.dimensions]
+
+  def _numerical_mask(self, rows:Optional[int]=None):
+    return [not (isinstance(dim, sp.space.Real) or isinstance(dim, sp.space.Integer)) for dim in self.dimensions]
+
+  # def _scalar_and_categorical_matrices(self, X:npt.ArrayLike):
+  #   # embed()
+  #   Xt = self.transform(X)
+  #   # embed()
+  #   # for dim in self.dimensions:
+  #   #   pass
+
+  # def transform(self, X):
+  #   X = _sanitize_arraylike(X)
+  #   return super().transform(X)
+
+  def _numerical_and_categorical_masked_arrays(self, X:npt.ArrayLike):
+    # embed()
+    num_rows = np.shape(X)[0]
+    X_num = np.ma.masked_array(X, mask=[self._numerical_mask() for row in range(num_rows)])
+    X_cat = np.ma.masked_array(X, mask=[self._categorical_mask() for row in range(num_rows)])
+    return X_num, X_cat
+
+  def gowers_distance(self, X:npt.ArrayLike, Y:npt.ArrayLike, ord=None):
     """Compute gower distance between two points in this space.
 
     Parameters
     ----------
-    point_a : array
+    X : array
         First point.
 
-    point_b : array
+    Y : array
         Second point.
     """
-    total_distance = 0.
-    for a, b, dim in zip(point_a, point_b, self.dimensions):
-      total_distance += dim.transform_distance(a, b)
+    shape_a = np.shape(X)
+    shape_b = np.shape(Y)
 
-    return total_distance/self.n_dims
+    if len(shape_a) == 1:
+      X = [X]
+    if len(shape_b) == 1:
+      Y = [Y]
+
+    difference_matrix = self.gowers_difference(X, Y)
+
+    distance = difference_matrix.sum(axis=-1)/self.n_dims
+    # cat_dist = (X_cat.astype(int) ^ Y_cat.astype(int)).astype(bool).astype(int).sum(axis=1)
+
+    # distance = (num_dist + cat_dist)/self.n_dims
+
+    if np.shape(distance) == (1,):
+      return distance[0]
+
+    return distance
 
 
-  def gowers_matrix(self, point_a, points:npt.ArrayLike):
-    # probably want to vectorize
-    matrix = [[self.dimensions[col].transform_distance(point_a[col], points[row][col]) for col in range(self.n_dims)] for row in range(len(points))]
-    return np.array(matrix) 
+  def gowers_difference(self, X:npt.ArrayLike, Y:npt.ArrayLike):
+    X = self.transform(X)
+    Y = self.transform(Y)
+
+    diff = X[:, None, :] - Y[None, :, :]
+
+    cat_cols = self._categorical_columns()
+
+    diff[:, :, cat_cols] = diff[:, :, cat_cols].astype(bool).astype(int)
+
+    return diff
 
 
   def inverse_transform_gowers_distance(self, point_a, point_b):

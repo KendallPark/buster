@@ -23,7 +23,7 @@ class TestDimension(unittest.TestCase):
     np.testing.assert_array_equal(dimension.inverse_transform([0.5, 1]), np.array([5.5, 10]))
 
   def test_integer_transform(self):
-    dimension = data.Integer(1, 10)
+    dimension = dodeata.Integer(1, 10)
     self.assertEqual(dimension.inverse_transform(0), 1)
     self.assertEqual(dimension.inverse_transform(0.01), 1)
     self.assertEqual(dimension.inverse_transform(0.99), 10)
@@ -76,8 +76,19 @@ class TestSpace(unittest.TestCase):
     point_a = [0, 0, 0, 'cat']
     point_b = [100, 0, 0, 'cat']
     point_c = [-100, 50, 1, 'dog']
-    result = SPACE_1.gowers_matrix(point_a, [point_b, point_c])
+    result = SPACE_1.gowers_distance(point_a, [point_b, point_c])
     expected = np.array([[0.5 , 0.  , 0.  , 0.  ], [0.5 , 0.25, 1.  , 1.  ]])
+    np.testing.assert_array_equal(result, expected)
+
+  def test_gowers_difference(self):
+    point_a = [0, 0, 0, 'cat']
+    point_b = [100, 0, 0, 'cat']
+    point_c = [-100, 50, 1, 'rabbit']
+    result = SPACE_1.gowers_difference([point_a, point_c], [point_b, point_c])
+    expected = np.array([[[-0.5 ,  0.  ,  0.  ,  0.  ], 
+                          [ 0.5 , -0.25, -1.  ,  1.  ]],
+                         [[-1.  ,  0.25,  1.  ,  1.  ],
+                          [ 0.  ,  0.  ,  0.  ,  0.  ]]])
     np.testing.assert_array_equal(result, expected)
 
   def test_from_df(self):
@@ -130,6 +141,20 @@ class TestSpace(unittest.TestCase):
     self.assertEqual(feat_int, data.Integer)
     feat_cat = data.Space.infer_dimension(pd.Series(['cat']))
     self.assertEqual(feat_cat, data.Categorical)
+
+  # def test_scalar_and_categorical_matrices(self):
+  #   result = SPACE_1._scalar_and_categorical_matrices(DF_1)
+
+  def test_categorical_mask(self):
+    result = SPACE_1._categorical_mask()
+    expected = [True, True, True, False]
+    self.assertEqual(result, expected)
+
+  def test_numerical_mask(self):
+    result = SPACE_1._numerical_mask()
+    expected = [False, False, False, True]
+    self.assertEqual(result, expected)
+    
 
 
 class TestGowerBallTree(unittest.TestCase):

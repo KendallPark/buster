@@ -35,7 +35,7 @@ def intersite_proj_th(p:npt.ArrayLike, samples:npt.ArrayLike, space:data.Space, 
   return np.linalg.norm(gowers_matrix, ord=2, axis=1).min()
 
 
-def intersite_proj(p:npt.ArrayLike, samples:npt.ArrayLike, space:data.Space, alpha:float=0.5) -> float:
+def intersite_proj(p:npt.ArrayLike, samples:npt.ArrayLike, space:data.Space) -> float:
   """Perform MIP sampling. (No threshold.)
 
   Crombecq, K., Laermans, E. & Dhaene, T. Efficient space-filling and 
@@ -90,3 +90,15 @@ def voronoi_rankings(X, y, space, candidates:Optional[npt.ArrayLike]=None, crite
   ns = neighbor_score(X, y, tree)
   lf = label_factor(y)
   return vol * ns * lf
+
+def _space_filling_metric(X, tree):
+  nn_dists, _ = tree.query(X, k=2)
+  max_dist = max([dist[1] for dist in nn_dists])
+  return 0.5 * max_dist
+
+
+# def mivor_accept(candidate, v_max, X, tree):
+#   t = _space_filling_metric(X, tree)
+#   space = tree. 
+
+
