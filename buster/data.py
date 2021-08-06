@@ -88,28 +88,51 @@ class Categorical(sp.space.Categorical):
 
 class Space(sp.space.Space):
 
-  def gowers_distance(self, point_a, point_b):
+  def _categorical_columns(self):
+    return [isinstance(dim, sp.space.Categorical) for dim in self.dimensions]
+
+
+  def _numerical_columns(self, rows:Optional[int]=None):
+    return [isinstance(dim, sp.space.Real) or isinstance(dim, sp.space.Integer) for dim in self.dimensions]
+
+
+  def transform(self, X):
+    if isinstance(X,  pd.DataFrame):
+      X = X.to_numpy()
+    elif len(np.shape(X)) == 1:
+      X = [X]
+    return super().transform(X)
+
+
+  def gowers_distance(self, X:npt.ArrayLike, Y:npt.ArrayLike, ord=None):
     """Compute gower distance between two points in this space.
 
     Parameters
     ----------
-    point_a : array
+    X : array
         First point.
 
-    point_b : array
+    Y : array
         Second point.
     """
-    total_distance = 0.
-    for a, b, dim in zip(point_a, point_b, self.dimensions):
-      total_distance += dim.transform_distance(a, b)
+    difference_matrix = self.gowers_difference(X, Y)
 
-    return total_distance/self.n_dims
+    distance = difference_matrix.sum(axis=-1)/self.n_dims
+
+    return np.squeeze(distance)
 
 
-  def gowers_matrix(self, point_a, points:npt.ArrayLike):
-    # probably want to vectorize
-    matrix = [[self.dimensions[col].transform_distance(point_a[col], points[row][col]) for col in range(self.n_dims)] for row in range(len(points))]
-    return np.array(matrix) 
+  def gowers_difference(self, X:npt.ArrayLike, Y:npt.ArrayLike):
+    X = self.transform(X)
+    Y = self.transform(Y)
+
+    diff = np.abs(X[:, None, :] - Y[None, :, :])
+
+    cat_cols = self._categorical_columns()
+
+    diff[:, :, cat_cols] = diff[:, :, cat_cols].astype(bool).astype(int)
+
+    return np.squeeze(diff)
 
 
   def inverse_transform_gowers_distance(self, point_a, point_b):
