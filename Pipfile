@@ -7,10 +7,9 @@ name = "pypi"
 numpy = "*"
 setuptools = "*"
 scipy = "*"
-gower = "*"
 pandas = "*"
-pydoe = "*"
 scikit-optimize = "*"
+matplotlib = "*"
 
 [dev-packages]
 ipython = "*"
