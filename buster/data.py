@@ -157,9 +157,13 @@ class Space(sp.space.Space):
 
     distance = difference_matrix.sum(axis=-1) / self.n_dims
 
-    return np.squeeze(distance)
+    return distance
 
   def gowers_difference(self, X: npt.ArrayLike, Y: npt.ArrayLike):
+    self.set_transformer_by_type("normalize", sp.space.Real)
+    self.set_transformer_by_type("normalize", sp.space.Integer)
+    self.set_transformer_by_type("label", sp.space.Categorical)
+
     X = self.transform(X)
     Y = self.transform(Y)
 
@@ -169,7 +173,7 @@ class Space(sp.space.Space):
 
     diff[:, :, cat_cols] = diff[:, :, cat_cols].astype(bool).astype(int)
 
-    return np.squeeze(diff)
+    return diff
 
   def inverse_transform_gowers_distance(self, point_a, point_b):
     total_distance = 0.
@@ -253,6 +257,45 @@ class Space(sp.space.Space):
     return cls.from_df(
         pd.read_csv(filepath_or_buffer, skipinitialspace=skipinitialspace),
         **kwargs)
+
+
+def gowers_distance(X: npt.ArrayLike,
+                    Y: npt.ArrayLike,
+                    space: sp.space.Space,
+                    ord=None):
+  """Compute gower distance between two points in this space.
+
+  Parameters
+  ----------
+  X : array
+      First point.
+
+  Y : array
+      Second point.
+  """
+  difference_matrix = gowers_difference(X, Y, space)
+
+  distance = difference_matrix.sum(axis=-1) / space.n_dims
+
+  return distance
+
+
+def gowers_difference(X: npt.ArrayLike, Y: npt.ArrayLike,
+                      space: sp.space.Space):
+  space.set_transformer_by_type("normalize", sp.space.Real)
+  space.set_transformer_by_type("normalize", sp.space.Integer)
+  space.set_transformer_by_type("label", sp.space.Categorical)
+
+  X = space.transform(X)
+  Y = space.transform(Y)
+
+  diff = np.abs(X[:, None, :] - Y[None, :, :])
+
+  cat_cols = [isinstance(dim, sp.Categorical) for dim in space.dimensions]
+
+  diff[:, :, cat_cols] = diff[:, :, cat_cols].astype(bool).astype(int)
+
+  return diff
 
 
 class GowerBallTree(neighbors.BallTree):
