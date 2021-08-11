@@ -7,15 +7,15 @@ name = "pypi"
 numpy = "*"
 setuptools = "*"
 scipy = "*"
-gower = "*"
 pandas = "*"
-pydoe = "*"
 scikit-optimize = "*"
+matplotlib = "*"
 
 [dev-packages]
 ipython = "*"
 pylint = "*"
 yapf = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.9"
