@@ -20,7 +20,7 @@ import numpy as np
 
 
 # TODO: refactor to depend on a mixin--not a subclass of optimizers
-class ClassificationOptimizer(optimizer.Optimizer):
+class AdaptiveSampler(optimizer.Optimizer):
 
   def __init__(self,
                dimensions,

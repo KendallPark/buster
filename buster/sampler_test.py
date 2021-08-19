@@ -7,13 +7,13 @@ import numpy as np
 from buster import sampler, metrics
 
 
-class TestClassificationOptimizer(unittest.TestCase):
+class TestAdaptiveSampler(unittest.TestCase):
 
   def test_ask_one_dimension_numeric(self):
     X = [[10], [20], [30], [40], [50], [60], [70], [80], [90], [100]]
     y = [False, False, False, False, False, True, True, True, True, True]
     space = sp.Space([(0, 100)])
-    opt = sampler.ClassificationOptimizer(space.dimensions, random_state=0)
+    opt = sampler.AdaptiveSampler(space.dimensions, random_state=0)
     opt.tell(X, y)
     result = opt.ask()
 
@@ -29,7 +29,7 @@ class TestClassificationOptimizer(unittest.TestCase):
 
     space = sp.Space([(0, 100), ['cat', 'dog', 'rabbit']])
 
-    apt = sampler.ClassificationOptimizer(space.dimensions, random_state=0)
+    apt = sampler.AdaptiveSampler(space.dimensions, random_state=0)
     apt.tell(X, y)
     result = apt.ask()
 
@@ -45,9 +45,9 @@ class TestClassificationOptimizer(unittest.TestCase):
   def test_run_three_dimensions_mixed(self):
     space = sp.Space([(0, 100), (0., 100.), ['cat', 'dog', 'rabbit']])
 
-    opt = sampler.ClassificationOptimizer(space.dimensions,
-                                          random_state=1,
-                                          n_initial_points=1000)
+    opt = sampler.AdaptiveSampler(space.dimensions,
+                                  random_state=1,
+                                  n_initial_points=1000)
 
     def func(X):
 
