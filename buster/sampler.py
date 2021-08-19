@@ -5,7 +5,7 @@ from IPython import embed
 import pandas as pd
 import numpy.typing as npt
 
-from buster import data
+from buster.metrics import gowers
 from skopt import sampler, optimizer
 
 import skopt.space as sp
@@ -73,7 +73,7 @@ class ClassificationOptimizer(optimizer.Optimizer):
       raise ValueError("Expected parallel_strategy to be one of " +
                        str(supported_strategies) + ", " + "got %s" % strategy)
 
-    precomputed_dists = data.gowers_distance(self.Xi, self.Xi, self.space)
+    precomputed_dists = gowers.gowers_distance(self.Xi, self.Xi, self.space)
 
     # TODO: cache distance calculations so they don't repeat
     # self.cache_ = {len(self.Xi): precomputed_dists}  # cache_ the result

@@ -1,18 +1,10 @@
-from re import S
 import unittest
-from IPython import embed
-
-from buster import sampler, data, plots
-
-from skopt import optimizer, space as sp
-
+import math
+# from IPython import embed
+from skopt import space as sp
 import numpy as np
 
-import math
-
-import matplotlib.pyplot as plt
-
-# matplotlib.matplotlib_fname()
+from buster import sampler, metrics
 
 
 class TestClassificationOptimizer(unittest.TestCase):
@@ -21,10 +13,9 @@ class TestClassificationOptimizer(unittest.TestCase):
     X = [[10], [20], [30], [40], [50], [60], [70], [80], [90], [100]]
     y = [False, False, False, False, False, True, True, True, True, True]
     space = sp.Space([(0, 100)])
-    optimizer = sampler.ClassificationOptimizer(space.dimensions,
-                                                random_state=0)
-    optimizer.tell(X, y)
-    result = optimizer.ask()
+    opt = sampler.ClassificationOptimizer(space.dimensions, random_state=0)
+    opt.tell(X, y)
+    result = opt.ask()
 
     expected = [[66], [53], [59], [64], [62], [58], [70], [51], [55], [68]]
 
@@ -38,10 +29,9 @@ class TestClassificationOptimizer(unittest.TestCase):
 
     space = sp.Space([(0, 100), ['cat', 'dog', 'rabbit']])
 
-    optimizer = sampler.ClassificationOptimizer(space.dimensions,
-                                                random_state=0)
-    optimizer.tell(X, y)
-    result = optimizer.ask()
+    apt = sampler.ClassificationOptimizer(space.dimensions, random_state=0)
+    apt.tell(X, y)
+    result = apt.ask()
 
     expected = [[51, 'cat'], [60, 'dog'], [68, 'dog'], [77, 'rabbit'],
                 [54, 'rabbit'], [75, 'dog'], [79, 'cat'], [53, 'dog'],
@@ -55,9 +45,9 @@ class TestClassificationOptimizer(unittest.TestCase):
   def test_run_three_dimensions_mixed(self):
     space = sp.Space([(0, 100), (0., 100.), ['cat', 'dog', 'rabbit']])
 
-    optimizer = sampler.ClassificationOptimizer(space.dimensions,
-                                                random_state=1,
-                                                n_initial_points=1000)
+    opt = sampler.ClassificationOptimizer(space.dimensions,
+                                          random_state=1,
+                                          n_initial_points=1000)
 
     def func(X):
 
@@ -75,9 +65,9 @@ class TestClassificationOptimizer(unittest.TestCase):
 
       return answer
 
-    optimizer.run(func, n_iter=20)
+    opt.run(func, n_iter=20)
 
-    result = optimizer.get_result()
+    result = opt.get_result()
     # TODO: finish this test
 
 
@@ -89,7 +79,7 @@ class TestKLargestDiverseNeighborhood(unittest.TestCase):
 
     space = sp.Space([(0, 10)])
 
-    distances = data.gowers_distance(X, X, space)
+    distances = metrics.gowers.gowers_distance(X, X, space)
 
     result = sampler.k_largest_diverse_neighborhood(distances,
                                                     y,
@@ -107,7 +97,7 @@ class TestKLargestDiverseNeighborhood(unittest.TestCase):
 
     space = sp.Space([['cat', 'dog', 'rabbit']])
 
-    distances = data.gowers_distance(X, X, space)
+    distances = metrics.gowers.gowers_distance(X, X, space)
 
     result = sampler.k_largest_diverse_neighborhood(distances,
                                                     y,
