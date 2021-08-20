@@ -1,7 +1,7 @@
 import collections
 from typing import Optional, Text
 
-import numpy.typing as npt
+#import numpy.typing as npt
 import numpy as np
 import pandas as pd
 from buster import data
@@ -20,8 +20,8 @@ def lhs_scaled(space: data.Space,
   return design
 
 
-def intersite_proj_th(p: npt.ArrayLike,
-                      samples: npt.ArrayLike,
+def intersite_proj_th(p,
+                      samples,
                       space: data.Space,
                       alpha: float = 0.5) -> float:
   """Perform MIPT sampling.
@@ -40,8 +40,7 @@ def intersite_proj_th(p: npt.ArrayLike,
   return np.linalg.norm(gowers_matrix, ord=2, axis=1).min()
 
 
-def intersite_proj(p: npt.ArrayLike, samples: npt.ArrayLike,
-                   space: data.Space) -> float:
+def intersite_proj(p, samples, space: data.Space) -> float:
   """Perform MIP sampling. (No threshold.)
 
   Crombecq, K., Laermans, E. & Dhaene, T. Efficient space-filling and 
@@ -59,13 +58,12 @@ def intersite_proj(p: npt.ArrayLike, samples: npt.ArrayLike,
   return coeff_1 * l2_norm_min + coeff_2 * min_norm_min
 
 
-def label_factor(y: npt.ArrayLike):
+def label_factor(y):
   counts = collections.Counter(y)
   return ((np.array([counts[label] for label in y]) * -1) + len(y)) / len(y)
 
 
-def voronoi_volume_fractions(tree: data.GowerBallTree,
-                             candidates: npt.ArrayLike):
+def voronoi_volume_fractions(tree: data.GowerBallTree, candidates):
   data, _, _, _ = tree.get_arrays()
   volumes = np.zeros(len(data))
   _, nn_candidates = tree.query(candidates, k=1)
@@ -76,10 +74,7 @@ def voronoi_volume_fractions(tree: data.GowerBallTree,
   return volumes / len(nn_candidates)
 
 
-def neighbor_score(X: npt.ArrayLike,
-                   y: npt.ArrayLike,
-                   tree: data.GowerBallTree,
-                   k: Optional[int] = None):
+def neighbor_score(X, y, tree: data.GowerBallTree, k: Optional[int] = None):
   if k is None:
     n_dim = X.shape[1]
     k = min(2 * n_dim + 1, len(X))
@@ -94,7 +89,7 @@ def neighbor_score(X: npt.ArrayLike,
 def voronoi_rankings(X,
                      y,
                      space,
-                     candidates: Optional[npt.ArrayLike] = None,
+                     candidates=None,
                      criterion: Optional[Text] = None,
                      random_state: Optional[int] = None):
   if candidates is None:

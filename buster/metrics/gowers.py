@@ -1,10 +1,10 @@
 """Functions to Gowers distance between sets of points."""
 import numpy as np
-import numpy.typing as npt
+#import numpy.typing as npt
 from skopt import space as sp
 
 
-def gowers_distance(X: npt.ArrayLike, Y: npt.ArrayLike, space: sp.Space):
+def gowers_distance(X, Y, space: sp.Space):
   """Compute gower distance between two lists of points in space.
 
   Parameters
@@ -22,7 +22,7 @@ def gowers_distance(X: npt.ArrayLike, Y: npt.ArrayLike, space: sp.Space):
   return distance
 
 
-def gowers_difference(X: npt.ArrayLike, Y: npt.ArrayLike, space: sp.Space):
+def gowers_difference(X, Y, space: sp.Space):
   space.set_transformer_by_type("normalize", sp.space.Real)
   space.set_transformer_by_type("normalize", sp.space.Integer)
   space.set_transformer_by_type("label", sp.space.Categorical)

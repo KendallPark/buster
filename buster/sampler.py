@@ -3,7 +3,7 @@ from typing import Callable
 from IPython import embed
 
 import pandas as pd
-import numpy.typing as npt
+#import numpy.typing as npt
 
 from buster.metrics import gowers
 from skopt import sampler, optimizer
@@ -104,8 +104,8 @@ class AdaptiveSampler(optimizer.Optimizer):
                                                   random_state=self.rng)
 
 
-def k_largest_diverse_neighborhood(X: npt.ArrayLike,
-                                   y: npt.ArrayLike,
+def k_largest_diverse_neighborhood(X,
+                                   y,
                                    n_neighbors: int = 1,
                                    k: int = 1,
                                    metric: Text = "precomputed",
